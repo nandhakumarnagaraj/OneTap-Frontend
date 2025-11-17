@@ -1,0 +1,197 @@
+<div class="min-h-screen bg-gray-50 p-4 sm:p-8 font-sans">
+  <header class="mb-10 text-center border-b pb-4 border-indigo-100">
+    <h1 class="text-5xl font-extrabold text-indigo-700 tracking-tight sm:text-6xl">
+      SAMS Dashboard
+    </h1>
+    <p class="mt-2 text-xl text-gray-500">Student Attendance Management System</p>
+
+    <div *ngIf="errorMessage()" class="mt-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded-lg shadow-md transition-all duration-300 animate-fadeIn">
+      <p class="font-semibold">Connection Issue:</p>
+      <p class="text-sm">{{ errorMessage() }}</p>
+    </div>
+    <div *ngIf="successMessage()" class="mt-6 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded-lg shadow-md transition-all duration-300 animate-fadeIn">
+      <p class="font-semibold">Success!</p>
+      <p class="text-sm">{{ successMessage() }}</p>
+    </div>
+  </header>
+
+  <nav class="flex justify-center mb-10">
+    @for (item of views; track item.view) {
+      <button
+        (click)="setView(item.view)"
+        [class]="getTabClasses(item.view)"
+        [disabled]="isLoading()"
+      >
+        <span [innerHTML]="getIcon(item.view)" class="w-5 h-5 mr-2"></span>
+        {{ item.label }}
+      </button>
+    }
+  </nav>
+
+  <main class="max-w-7xl mx-auto bg-white p-8 rounded-2xl shadow-2xl transition-all duration-300">
+
+    @if (isLoading()) {
+      <div class="flex items-center justify-center p-20 text-xl font-medium text-indigo-500">
+        <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Loading real-time data from server...
+      </div>
+    }
+
+    @if (currentView() === 'dashboard' && !isLoading()) {
+      <app-dashboard-metrics
+        [totalStudents]="students().length"
+        [activeBatchesCount]="activeBatchesCount()"
+        [checkedInCount]="checkedInCount()"
+        [attendanceRatio]="attendanceRatio()"
+      ></app-dashboard-metrics>
+    }
+
+    @if (currentView() === 'attendance' && !isLoading()) {
+      <div class="max-w-xl mx-auto p-8 bg-white rounded-xl shadow-2xl border border-gray-100">
+        <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Quick Attendance</h2>
+        <div class="space-y-6">
+          <label for="rollNumber" class="block text-lg font-medium text-gray-700">Student Roll Number</label>
+          <input
+            id="rollNumber"
+            type="text"
+            [(ngModel)]="rollNumberInput"
+            placeholder="e.g., STU001"
+            class="w-full p-4 border-2 border-indigo-300 rounded-xl text-xl focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm"
+          />
+
+          <div class="flex space-x-4 pt-4">
+            <button
+              (click)="handleCheckIn()"
+              class="flex-1 flex items-center justify-center px-6 py-3 text-white bg-green-500 rounded-xl shadow-lg hover:bg-green-600 transition duration-200 font-semibold text-lg disabled:bg-gray-400 disabled:shadow-none"
+              [disabled]="!rollNumberInput || isProcessing()"
+            >
+              <span *ngIf="isProcessing() && actionType() === 'in'" class="flex items-center">
+                <svg class="animate-spin h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                Checking In...
+              </span>
+              <span *ngIf="!isProcessing() || actionType() !== 'in'">Check In</span>
+            </button>
+
+            <button
+              (click)="handleCheckOut()"
+              class="flex-1 flex items-center justify-center px-6 py-3 text-white bg-red-500 rounded-xl shadow-lg hover:bg-red-600 transition duration-200 font-semibold text-lg disabled:bg-gray-400 disabled:shadow-none"
+              [disabled]="!rollNumberInput || isProcessing()"
+            >
+              <span *ngIf="isProcessing() && actionType() === 'out'" class="flex items-center">
+                <svg class="animate-spin h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                Checking Out...
+              </span>
+              <span *ngIf="!isProcessing() || actionType() !== 'out'">Check Out</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (currentView() === 'batches' && !isLoading()) {
+      <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
+        <span [innerHTML]="getIcon('batches')" class="w-6 h-6 mr-2"></span>
+        <span class="ml-2">All Batches ({{ batches().length }})</span>
+      </h2>
+      <div class="overflow-x-auto rounded-xl shadow-xl border border-gray-200">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-indigo-50">
+            <tr>
+              <th class="table-header-cell">ID / Code</th>
+              <th class="table-header-cell">Name</th>
+              <th class="table-header-cell text-center">Capacity</th>
+              <th class="table-header-cell">Status</th>
+              <th class="table-header-cell">Dates</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-100">
+            @for (batch of batches(); track batch.batchId) {
+              <tr class="hover:bg-gray-50 transition duration-100">
+                <td class="table-data-cell font-medium text-gray-900">{{ batch.batchId }} / {{ batch.batchCode }}</td>
+                <td class="table-data-cell text-gray-700">{{ batch.batchName }}</td>
+                <td class="table-data-cell text-center text-gray-700">
+                  <div class="font-bold">{{ batch.currentCount }} / {{ batch.maxCount }}</div>
+                  <div class="text-xs text-indigo-500">({{ batch.availableSlots }} slots available)</div>
+                </td>
+                <td class="table-data-cell">
+                  <span [class]="getStatusClasses(batch.status, 'batch')">
+                    {{ batch.status }}
+                  </span>
+                </td>
+                <td class="table-data-cell text-gray-600">
+                  {{ batch.startDate }} <span class="text-gray-400">to</span> {{ batch.endDate }}
+                </td>
+              </tr>
+            }
+            @empty {
+              <tr>
+                <td colspan="5" class="p-8 text-center text-lg text-gray-500 bg-gray-50">No batches found on the server.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    @if (currentView() === 'students' && !isLoading()) {
+      <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
+        <span [innerHTML]="getIcon('students')" class="w-6 h-6 mr-2"></span>
+        <span class="ml-2">All Students ({{ students().length }})</span>
+      </h2>
+      <div class="overflow-x-auto rounded-xl shadow-xl border border-gray-200">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-indigo-50">
+            <tr>
+              <th class="table-header-cell">ID / Roll No.</th>
+              <th class="table-header-cell">Name / Contact</th>
+              <th class="table-header-cell">Batch</th>
+              <th class="table-header-cell">Attendance Status</th>
+              <th class="table-header-cell text-right">Hours Present</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-100">
+            @for (student of students(); track student.sid) {
+              <tr class="hover:bg-gray-50 transition duration-100">
+                <td class="table-data-cell font-medium text-gray-900">
+                  {{ student.sid }} / <span class="text-indigo-600 font-bold">{{ student.rollNumber }}</span>
+                </td>
+                <td class="table-data-cell text-gray-700">
+                  <div class="font-semibold text-gray-900">{{ student.sname }}</div>
+                  <div class="text-xs text-gray-500">{{ student.email || 'N/A' }}</div>
+                </td>
+                <td class="table-data-cell text-gray-700">
+                  {{ student.batchName || 'Unassigned' }}
+                  <div *ngIf="student.batchCode" class="text-xs text-gray-400">({{ student.batchCode }})</div>
+                </td>
+                <td class="table-data-cell">
+                  <span [class]="getStatusClasses(student.status, 'student')">
+                    {{ student.status }}
+                    <span *ngIf="student.checkedIn" class="text-xs font-bold block">(Checked In)</span>
+                  </span>
+                </td>
+                <td class="table-data-cell text-right font-bold text-indigo-700">
+                  {{ student.hoursPresent | number: '1.2-2' }}h
+                </td>
+              </tr>
+            }
+            @empty {
+              <tr>
+                <td colspan="5" class="p-8 text-center text-lg text-gray-500 bg-gray-50">No students found on the server.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+  </main>
+</div>
