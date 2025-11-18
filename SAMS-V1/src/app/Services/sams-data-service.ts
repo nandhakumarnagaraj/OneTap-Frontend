@@ -4,6 +4,8 @@ import { Observable, catchError, map, throwError } from 'rxjs';
 import { ApiResponse } from '../Model/api-response'; // Assuming models.ts is in the same directory
 import { StudentResponse } from '../Model/studtent-response';
 import { BatchResponse } from '../Model/batch-response';
+import { StudentCreateRequest } from '../Model/student-create-request';
+import { BatchCreateRequest } from '../Model/batch-create-request';
 
 // --- Type Definition for Service Output ---
 interface DataResult<T> {
@@ -116,6 +118,38 @@ export class SamsDataService {
           return response.data;
         }
         // Handles logical failures returned by the API (e.g., "Student must check in before checking out")
+        throw new Error(response.message);
+      })
+    );
+  }
+
+  /**
+   * Creates a new student.
+   */
+  createStudent(student: StudentCreateRequest): Observable<StudentResponse> {
+    const url = `${this.API_BASE_URL}/students`;
+    return this.http.post<ApiResponse<StudentResponse>>(url, student).pipe(
+      catchError(this.handleObservableError<StudentResponse>('student')),
+      map((response) => {
+        if (response.success) {
+          return response.data;
+        }
+        throw new Error(response.message);
+      })
+    );
+  }
+
+  /**
+   * Creates a new batch.
+   */
+  createBatch(batch: BatchCreateRequest): Observable<BatchResponse> {
+    const url = `${this.API_BASE_URL}/batches`;
+    return this.http.post<ApiResponse<BatchResponse>>(url, batch).pipe(
+      catchError(this.handleObservableError<BatchResponse>('batch')),
+      map((response) => {
+        if (response.success) {
+          return response.data;
+        }
         throw new Error(response.message);
       })
     );

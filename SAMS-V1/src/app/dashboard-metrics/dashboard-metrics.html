@@ -1,0 +1,34 @@
+<div class="row g-4 mb-4">
+  <div class="col-md-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6 class="card-subtitle mb-2 text-muted">Total Students</h6>
+        <p class="card-text fs-1 fw-bold text-primary">{{ totalStudents }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6 class="card-subtitle mb-2 text-muted">Active Batches</h6>
+        <p class="card-text fs-1 fw-bold text-success">{{ activeBatchesCount }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6 class="card-subtitle mb-2 text-muted">Checked In</h6>
+        <p class="card-text fs-1 fw-bold text-info">{{ checkedInCount }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6 class="card-subtitle mb-2 text-muted">Attendance</h6>
+        <p class="card-text fs-1 fw-bold text-warning">{{ attendanceRatio | number: '1.0-1' }}%</p>
+      </div>
+    </div>
+  </div>
+</div>

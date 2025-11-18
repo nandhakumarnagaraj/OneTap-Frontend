@@ -1,0 +1,12 @@
+<nav class="d-flex justify-content-center mb-5">
+  @for (item of views; track item.view) {
+    <button
+      (click)="setView(item.view)"
+      [class]="getTabClasses(item.view)"
+      [disabled]="isLoading()"
+    >
+      <span [innerHTML]="getIcon(item.view)" class="me-2"></span>
+      {{ item.label }}
+    </button>
+  }
+</nav>

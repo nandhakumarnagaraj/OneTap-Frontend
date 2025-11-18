@@ -1,0 +1,48 @@
+<h2 class="fs-3 fw-bold text-dark mb-4 d-flex align-items-center">
+  <span [innerHTML]="getIcon('students')" class="me-2"></span>
+  <span class="ms-2">All Students ({{ students().length }})</span>
+</h2>
+<div class="table-responsive rounded-3 shadow-lg border">
+  <table class="table table-hover w-100">
+    <thead class="table-light">
+      <tr>
+        <th scope="col" class="px-3 py-2">ID / Roll No.</th>
+        <th scope="col" class="px-3 py-2">Name / Contact</th>
+        <th scope="col" class="px-3 py-2">Batch</th>
+        <th scope="col" class="px-3 py-2">Attendance Status</th>
+        <th scope="col" class="px-3 py-2 text-end">Hours Present</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (student of students(); track student.sid) {
+        <tr>
+          <td class="px-3 py-2 fw-medium text-dark">
+            {{ student.sid }} / <span class="text-primary fw-bold">{{ student.rollNumber }}</span>
+          </td>
+          <td class="px-3 py-2">
+            <div class="fw-semibold text-dark">{{ student.sname }}</div>
+            <div class="small text-muted">{{ student.email || 'N/A' }}</div>
+          </td>
+          <td class="px-3 py-2">
+            {{ student.batchName || 'Unassigned' }}
+            <div *ngIf="student.batchCode" class="small text-muted">({{ student.batchCode }})</div>
+          </td>
+          <td class="px-3 py-2">
+            <span [class]="getStatusClasses(student.status, 'student')">
+              {{ student.status }}
+              <span *ngIf="student.checkedIn" class="small fw-bold d-block">(Checked In)</span>
+            </span>
+          </td>
+          <td class="px-3 py-2 text-end fw-bold text-primary">
+            {{ student.hoursPresent | number: '1.2-2' }}h
+          </td>
+        </tr>
+      }
+      @empty {
+        <tr>
+          <td colspan="5" class="p-5 text-center fs-5 text-muted bg-light">No students found on the server.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

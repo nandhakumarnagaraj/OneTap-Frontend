@@ -1,0 +1,15 @@
+<header class="mb-5 text-center border-bottom pb-4">
+  <h1 class="display-1 fw-bold text-primary">
+    SAMS Dashboard
+  </h1>
+  <p class="mt-2 fs-5 text-muted">Student Attendance Management System</p>
+
+  <div *ngIf="errorMessage()" class="mt-4 alert alert-danger">
+    <p class="fw-bold">Connection Issue:</p>
+    <p class="small">{{ errorMessage() }}</p>
+  </div>
+  <div *ngIf="successMessage()" class="mt-4 alert alert-success">
+    <p class="fw-bold">Success!</p>
+    <p class="small">{{ successMessage() }}</p>
+  </div>
+</header>

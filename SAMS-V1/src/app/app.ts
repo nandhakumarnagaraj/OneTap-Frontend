@@ -4,15 +4,38 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChangeDetectionStrategy } from '@angular/core';
 import { forkJoin } from 'rxjs';
-import './app.component.css';
+import './app.css';
 import { SamsDataService } from './Services/sams-data-service';
 import { BatchResponse } from './Model/batch-response';
 import { StudentResponse } from './Model/studtent-response';
+import { StudentCreateRequest } from './Model/student-create-request';
+import { BatchCreateRequest } from './Model/batch-create-request';
+
+import { HeaderComponent } from './header/header';
+import { NavigationComponent } from './navigation/navigation';
+import { AttendanceComponent } from './attendance/attendance';
+import { BatchesComponent } from './batches/batches';
+import { StudentsComponent } from './students/students';
+import { CreateStudentComponent } from './create-student/create-student';
+import { DashboardMetricsComponent } from './dashboard-metrics/dashboard-metrics';
+
+type View = 'dashboard' | 'attendance' | 'students' | 'batches' | 'create-student';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule, SamsDataService, DashboardMetricsComponent, SafeHtmlPipe],
+  imports: [
+    CommonModule,
+    FormsModule,
+    HttpClientModule,
+    HeaderComponent,
+    NavigationComponent,
+    AttendanceComponent,
+    BatchesComponent,
+    StudentsComponent,
+    CreateStudentComponent,
+    DashboardMetricsComponent
+  ],
   templateUrl: './app.html',
   styleUrl: './app.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,8 +55,7 @@ export class App implements OnInit {
   errorMessage: WritableSignal<string | null> = signal(null);
   successMessage: WritableSignal<string | null> = signal(null);
 
-  // Form input for attendance
-  rollNumberInput: string = '';
+  isCreatingBatch = signal(false);
 
   // Navigation Items
   views = [
@@ -41,6 +63,7 @@ export class App implements OnInit {
     { view: 'attendance' as View, label: 'Attendance' },
     { view: 'students' as View, label: 'Students' },
     { view: 'batches' as View, label: 'Batches' },
+    { view: 'create-student' as View, label: 'Create Student' },
   ];
 
   constructor() {}
@@ -49,30 +72,10 @@ export class App implements OnInit {
     this.fetchData();
   }
 
-  // --- Icon Helper ---
-  getIcon(view: View): string {
-    switch (view) {
-      case 'dashboard':
-        return ICON_DASHBOARD;
-      case 'attendance':
-        return ICON_ATTENDANCE;
-      case 'students':
-        return ICON_STUDENTS;
-      case 'batches':
-        return ICON_BATCHES;
-      default:
-        return '';
-    }
-  }
-
   // --- Computed Signals for Dashboard ---
 
   activeBatchesCount = computed(() =>
     this.batches().filter((b) => b.status === 'ACTIVE').length
-  );
-
-  totalAvailableSlots = computed(() =>
-    this.batches().reduce((sum, b) => sum + b.availableSlots, 0)
   );
 
   checkedInCount = computed(() =>
@@ -96,43 +99,17 @@ export class App implements OnInit {
     this.clearMessages();
   }
 
-  getTabClasses(view: View): string {
-    return this.currentView() === view
-      ? 'tab-button tab-active'
-      : 'tab-button tab-inactive';
-  }
-
-  getStatusClasses(status: string, type: 'student' | 'batch'): string {
-    const lowerStatus = status.toLowerCase();
-
-    // Student Status
-    if (type === 'student') {
-      if (lowerStatus.includes('present')) return 'status-present';
-      if (lowerStatus.includes('late')) return 'status-late';
-      if (lowerStatus.includes('absent')) return 'status-absent';
-      if (lowerStatus.includes('excused')) return 'status-excused';
-    }
-
-    // Batch Status
-    if (type === 'batch') {
-      if (lowerStatus.includes('active')) return 'status-active';
-      if (lowerStatus.includes('completed') || lowerStatus.includes('inactive')) return 'status-completed';
-      if (lowerStatus.includes('upcoming')) return 'status-upcoming';
-    }
-
-    return 'status-inactive';
-  }
-
   clearMessages(): void {
     this.errorMessage.set(null);
     this.successMessage.set(null);
   }
 
+  toggleCreateBatchForm(): void {
+    this.isCreatingBatch.set(!this.isCreatingBatch());
+  }
+
   // --- Data Fetching (Delegated to Service) ---
 
-  /**
-   * Fetches all students and batches in parallel using forkJoin and updates signals.
-   */
   fetchData(): void {
     this.isLoading.set(true);
     this.clearMessages();
@@ -171,20 +148,17 @@ export class App implements OnInit {
     return this.students().find(s => s.rollNumber.toLowerCase() === rollNumber.toLowerCase());
   }
 
-  // --- Attendance Handlers (Delegated to Service) ---
+  // --- Event Handlers ---
 
-  /**
-   * Handles student check-in using the service and Observable subscription.
-   */
-  handleCheckIn(): void {
+  handleCheckIn(rollNumber: string): void {
     this.actionType.set('in');
     this.isProcessing.set(true);
     this.clearMessages();
 
-    const student = this.findStudentByRollNumber(this.rollNumberInput);
+    const student = this.findStudentByRollNumber(rollNumber);
 
     if (!student) {
-      this.errorMessage.set(`Student with Roll Number '${this.rollNumberInput}' not found.`);
+      this.errorMessage.set(`Student with Roll Number '${rollNumber}' not found.`);
       this.isProcessing.set(false);
       return;
     }
@@ -195,7 +169,6 @@ export class App implements OnInit {
           `${updatedStudent.sname} (Roll: ${updatedStudent.rollNumber}) checked IN successfully! Status: ${updatedStudent.status}`
         );
         this.fetchData();
-        this.rollNumberInput = '';
       },
       error: (error) => {
         this.errorMessage.set(error.message || 'Check-in failed due to network error.');
@@ -206,18 +179,15 @@ export class App implements OnInit {
     });
   }
 
-  /**
-   * Handles student check-out using the service and Observable subscription.
-   */
-  handleCheckOut(): void {
+  handleCheckOut(rollNumber: string): void {
     this.actionType.set('out');
     this.isProcessing.set(true);
     this.clearMessages();
 
-    const student = this.findStudentByRollNumber(this.rollNumberInput);
+    const student = this.findStudentByRollNumber(rollNumber);
 
     if (!student) {
-      this.errorMessage.set(`Student with Roll Number '${this.rollNumberInput}' not found.`);
+      this.errorMessage.set(`Student with Roll Number '${rollNumber}' not found.`);
       this.isProcessing.set(false);
       return;
     }
@@ -228,10 +198,51 @@ export class App implements OnInit {
           `${updatedStudent.sname} (Roll: ${updatedStudent.rollNumber}) checked OUT successfully! Hours: ${updatedStudent.hoursPresent.toFixed(2)}h`
         );
         this.fetchData();
-        this.rollNumberInput = '';
       },
       error: (error) => {
         this.errorMessage.set(error.message || 'Check-out failed due to network error.');
+      },
+      complete: () => {
+        this.isProcessing.set(false);
+      },
+    });
+  }
+
+  handleCreateStudent(student: StudentCreateRequest): void {
+    this.isProcessing.set(true);
+    this.clearMessages();
+
+    this.samsDataService.createStudent(student).subscribe({
+      next: (createdStudent) => {
+        this.successMessage.set(
+          `Student ${createdStudent.sname} (Roll: ${createdStudent.rollNumber}) created successfully!`
+        );
+        this.fetchData(); // Refresh student list
+        this.setView('students'); // Switch to students view
+      },
+      error: (error) => {
+        this.errorMessage.set(error.message || 'Student creation failed due to a network error.');
+      },
+      complete: () => {
+        this.isProcessing.set(false);
+      },
+    });
+  }
+
+  handleCreateBatch(batch: BatchCreateRequest): void {
+    this.isProcessing.set(true);
+    this.clearMessages();
+
+    this.samsDataService.createBatch(batch).subscribe({
+      next: (createdBatch) => {
+        this.successMessage.set(
+          `Batch ${createdBatch.batchName} (Code: ${createdBatch.batchCode}) created successfully!`
+        );
+        this.fetchData(); // Refresh batch list
+        this.isCreatingBatch.set(false); // Hide form
+      },
+      error: (error) => {
+        this.errorMessage.set(error.message || 'Batch creation failed due to a network error.');
       },
       complete: () => {
         this.isProcessing.set(false);

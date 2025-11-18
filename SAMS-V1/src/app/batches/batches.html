@@ -1,0 +1,89 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fs-3 fw-bold text-dark d-flex align-items-center">
+    <span [innerHTML]="getIcon('batches')" class="me-2"></span>
+    <span class="ms-2">All Batches ({{ batches().length }})</span>
+  </h2>
+  <button class="btn btn-primary" (click)="toggleCreateBatchForm()">
+    <span *ngIf="!isCreatingBatch()">Create New Batch</span>
+    <span *ngIf="isCreatingBatch()">Cancel</span>
+  </button>
+</div>
+
+@if (isCreatingBatch()) {
+  <div class="p-4 border rounded-3 mb-4">
+    <h3 class="fs-4 fw-bold mb-3">New Batch Details</h3>
+    <form #createBatchForm="ngForm" (ngSubmit)="handleCreateBatch()">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="batchName" class="form-label">Batch Name</label>
+          <input type="text" id="batchName" name="batchName" [(ngModel)]="newBatch.batchName" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+          <label for="batchCode" class="form-label">Batch Code</label>
+          <input type="text" id="batchCode" name="batchCode" [(ngModel)]="newBatch.batchCode" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+          <label for="maxCount" class="form-label">Max Students</label>
+          <input type="number" id="maxCount" name="maxCount" [(ngModel)]="newBatch.maxCount" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+          <label for="description" class="form-label">Description</label>
+          <input type="text" id="description" name="description" [(ngModel)]="newBatch.description" class="form-control">
+        </div>
+        <div class="col-md-6">
+          <label for="startDate" class="form-label">Start Date</label>
+          <input type="date" id="startDate" name="startDate" [(ngModel)]="newBatch.startDate" class="form-control">
+        </div>
+        <div class="col-md-6">
+          <label for="endDate" class="form-label">End Date</label>
+          <input type="date" id="endDate" name="endDate" [(ngModel)]="newBatch.endDate" class="form-control">
+        </div>
+      </div>
+      <div class="d-flex justify-content-end mt-3">
+        <button type="submit" class="btn btn-success" [disabled]="isProcessing() || createBatchForm.invalid">
+          <span *ngIf="isProcessing()" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          Save Batch
+        </button>
+      </div>
+    </form>
+  </div>
+}
+
+<div class="table-responsive rounded-3 shadow-lg border">
+  <table class="table table-hover w-100">
+    <thead class="table-light">
+      <tr>
+        <th scope="col" class="px-3 py-2">ID / Code</th>
+        <th scope="col" class="px-3 py-2">Name</th>
+        <th scope="col" class="px-3 py-2 text-center">Capacity</th>
+        <th scope="col" class="px-3 py-2">Status</th>
+        <th scope="col" class="px-3 py-2">Dates</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (batch of batches(); track batch.batchId) {
+        <tr>
+          <td class="px-3 py-2 fw-medium text-dark">{{ batch.batchId }} / {{ batch.batchCode }}</td>
+          <td class="px-3 py-2">{{ batch.batchName }}</td>
+          <td class="px-3 py-2 text-center">
+            <div class="fw-bold">{{ batch.currentCount }} / {{ batch.maxCount }}</div>
+            <div class="small text-primary">({{ batch.availableSlots }} slots available)</div>
+          </td>
+          <td class="px-3 py-2">
+            <span [class]="getStatusClasses(batch.status, 'batch')">
+              {{ batch.status }}
+            </span>
+          </td>
+          <td class="px-3 py-2">
+            {{ batch.startDate }} <span class="text-muted">to</span> {{ batch.endDate }}
+          </td>
+        </tr>
+      }
+      @empty {
+        <tr>
+          <td colspan="5" class="p-5 text-center fs-5 text-muted bg-light">No batches found on the server.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

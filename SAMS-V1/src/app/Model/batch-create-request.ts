@@ -5,4 +5,7 @@ export interface BatchCreateRequest {
     description: string | null;
     startDate: string | null;
     endDate: string | null;
+    trainingStartDate: string;
+    trainingEndDate: string;
+    batchCapacity: number;
 }

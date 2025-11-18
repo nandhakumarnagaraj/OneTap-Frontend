@@ -11,4 +11,7 @@ export interface BatchResponse {
   startDate: string;
   endDate: string;
   createdAt: string;
+  trainingStartDate: string;
+  trainingEndDate: string;
+  batchCapacity: number;
 }
